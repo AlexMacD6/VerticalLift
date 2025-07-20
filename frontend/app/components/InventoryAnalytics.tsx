@@ -22,6 +22,7 @@ import {
   LineElement,
 } from "chart.js";
 import { Bar, Line } from "react-chartjs-2";
+import { API_ENDPOINTS } from "../lib/api";
 
 ChartJS.register(
   CategoryScale,
@@ -724,8 +725,11 @@ export default function InventoryAnalytics({
         on_shelf_units: item.on_shelf_units,
       }));
 
+      if (!inventoryListId) {
+        throw new Error("Inventory list ID is required");
+      }
       const response = await fetch(
-        `http://localhost:8000/inventory-lists/${inventoryListId}/update-on-shelf-units`,
+        API_ENDPOINTS.updateOnShelfUnits(inventoryListId),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -757,10 +761,10 @@ export default function InventoryAnalytics({
 
     try {
       const inventoryResponse = await fetch(
-        `http://localhost:8000/inventory?inventory_list_id=${inventoryListId}`
+        API_ENDPOINTS.inventory(inventoryListId)
       );
       const dailySalesResponse = await fetch(
-        `http://localhost:8000/daily-sales?inventory_list_id=${inventoryListId}`
+        API_ENDPOINTS.dailySales(inventoryListId)
       );
 
       if (!inventoryResponse.ok || !dailySalesResponse.ok) {
@@ -781,8 +785,11 @@ export default function InventoryAnalytics({
           on_shelf_units: item.on_shelf_units,
         }));
 
+        if (!inventoryListId) {
+          throw new Error("Inventory list ID is required");
+        }
         const updateResponse = await fetch(
-          `http://localhost:8000/inventory-lists/${inventoryListId}/update-on-shelf-units`,
+          API_ENDPOINTS.updateOnShelfUnits(inventoryListId),
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1073,7 +1080,7 @@ export default function InventoryAnalytics({
     try {
       // Fetch daily sales data for the specific SKU only
       const response = await fetch(
-        `http://localhost:8000/daily-sales?inventory_list_id=${inventoryListId}&sku_id=${skuId}`
+        API_ENDPOINTS.dailySalesBySku(inventoryListId, skuId)
       );
 
       if (!response.ok) {

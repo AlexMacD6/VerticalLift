@@ -2,6 +2,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { RefreshCw, Database } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { API_ENDPOINTS } from "../lib/api";
 import {
   LineChart,
   Line,
@@ -90,11 +91,7 @@ const DataTable = forwardRef<DataTableRef, DataTableProps>((props, ref) => {
     setLoading(true);
     setError(null);
     try {
-      let url = "http://localhost:8000/inventory";
-      if (inventoryListId) {
-        url += `?inventory_list_id=${inventoryListId}`;
-      }
-      const response = await fetch(url);
+      const response = await fetch(API_ENDPOINTS.inventory(inventoryListId));
       if (response.ok) {
         const data = await response.json();
         setInventory(data);
@@ -116,8 +113,7 @@ const DataTable = forwardRef<DataTableRef, DataTableProps>((props, ref) => {
       return;
     }
     try {
-      const url = `http://localhost:8000/daily-sales?inventory_list_id=${inventoryListId}`;
-      const response = await fetch(url);
+      const response = await fetch(API_ENDPOINTS.dailySales(inventoryListId));
       if (response.ok) {
         const data = await response.json();
         setDailySales(data);

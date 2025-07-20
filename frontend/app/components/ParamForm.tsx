@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Settings, Play } from "lucide-react";
+import { API_ENDPOINTS } from "../lib/api";
 
 interface ParamFormProps {
   onSubmit: (plan: any[]) => void;
@@ -394,21 +395,18 @@ export default function ParamForm({
               setUpdateError(null);
               setUpdateSuccess(false);
               try {
-                const response = await fetch(
-                  "http://localhost:8000/tray-configs",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      tray_length_in: params.tray_length_in,
-                      tray_width_in: params.tray_width_in,
-                      tray_depth_in: params.tray_depth_in,
-                      num_trays: params.num_trays,
-                      weight_limit_lb: params.weight_limit_lb,
-                      name: "Default Configuration",
-                    }),
-                  }
-                );
+                const response = await fetch(API_ENDPOINTS.trayConfigs(), {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    tray_length_in: params.tray_length_in,
+                    tray_width_in: params.tray_width_in,
+                    tray_depth_in: params.tray_depth_in,
+                    num_trays: params.num_trays,
+                    weight_limit_lb: params.weight_limit_lb,
+                    name: "Default Configuration",
+                  }),
+                });
                 if (response.ok) {
                   setUpdateSuccess(true);
                   if (onConfigSaved) onConfigSaved();
@@ -436,7 +434,7 @@ export default function ParamForm({
               setUpdateSuccess(false);
               try {
                 const response = await fetch(
-                  `http://localhost:8000/tray-configs/${selectedConfigId}`,
+                  `${API_ENDPOINTS.trayConfigs()}/${selectedConfigId}`,
                   {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -493,21 +491,18 @@ export default function ParamForm({
               setUpdateError(null);
               setUpdateSuccess(false);
               try {
-                const response = await fetch(
-                  "http://localhost:8000/tray-configs",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      tray_length_in: params.tray_length_in,
-                      tray_width_in: params.tray_width_in,
-                      tray_depth_in: params.tray_depth_in,
-                      num_trays: params.num_trays,
-                      weight_limit_lb: params.weight_limit_lb,
-                      name: newConfigName,
-                    }),
-                  }
-                );
+                const response = await fetch(API_ENDPOINTS.trayConfigs(), {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    tray_length_in: params.tray_length_in,
+                    tray_width_in: params.tray_width_in,
+                    tray_depth_in: params.tray_depth_in,
+                    num_trays: params.num_trays,
+                    weight_limit_lb: params.weight_limit_lb,
+                    name: newConfigName,
+                  }),
+                });
                 if (response.ok) {
                   setUpdateSuccess(true);
                   setNewConfigName("");

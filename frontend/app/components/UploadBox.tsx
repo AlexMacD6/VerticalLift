@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Upload, FileText, Download, X } from "lucide-react";
+import { API_ENDPOINTS } from "../lib/api";
 
 interface UploadBoxProps {
   onSubmit: () => Promise<void>;
@@ -150,7 +151,7 @@ export default function UploadBox({
       }
 
       // 1. Create the inventory list
-      const listResp = await fetch("http://localhost:8000/inventory-lists", {
+      const listResp = await fetch(API_ENDPOINTS.inventoryLists(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: listName }),
@@ -167,7 +168,7 @@ export default function UploadBox({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("inventory_list_id", list.id);
-      const response = await fetch("http://localhost:8000/import-inventory", {
+      const response = await fetch(API_ENDPOINTS.importInventory(), {
         method: "POST",
         body: formData,
       });

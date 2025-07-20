@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { BarChart3, TrendingUp, Package, Clock, Info } from "lucide-react";
+import { API_ENDPOINTS } from "../lib/api";
 
 interface ResultsAnalysisProps {
   kpis: any;
@@ -74,9 +75,7 @@ export default function ResultsAnalysis({
 
   const fetchInventoryData = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:8000/inventory?inventory_list_id=${inventoryListId}`
-      );
+      const response = await fetch(API_ENDPOINTS.inventory(inventoryListId));
       if (response.ok) {
         const data = await response.json();
         setInventoryData(data);

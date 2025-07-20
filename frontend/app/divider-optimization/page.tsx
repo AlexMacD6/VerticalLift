@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import ParamForm from "../components/ParamForm";
 import DividerResults from "../components/DividerResults";
 import { Play, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { API_ENDPOINTS } from "../lib/api";
 
 export default function DividerOptimizationPage() {
   const [configs, setConfigs] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function DividerOptimizationPage() {
 
   const loadConfigs = async () => {
     try {
-      const response = await fetch("http://localhost:8000/tray-configs");
+      const response = await fetch(API_ENDPOINTS.trayConfigs());
       if (response.ok) {
         const data = await response.json();
         setConfigs(data);
@@ -47,7 +48,7 @@ export default function DividerOptimizationPage() {
   const loadInventoryLists = async () => {
     try {
       console.log("Loading inventory lists...");
-      const response = await fetch("http://localhost:8000/inventory-lists");
+      const response = await fetch(API_ENDPOINTS.inventoryLists());
       console.log("Inventory lists response status:", response.status);
       if (response.ok) {
         const data = await response.json();
@@ -65,7 +66,7 @@ export default function DividerOptimizationPage() {
   const createTestInventoryList = async () => {
     try {
       console.log("Creating test inventory list...");
-      const response = await fetch("http://localhost:8000/inventory-lists", {
+      const response = await fetch(API_ENDPOINTS.inventoryLists(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -110,7 +111,7 @@ SKU0006,High Volume Item,4,4,3,1.0,800,3600,9.9,3.0`;
       );
       formData.append("inventory_list_id", inventoryListId);
 
-      const response = await fetch("http://localhost:8000/import-inventory", {
+      const response = await fetch(API_ENDPOINTS.importInventory(), {
         method: "POST",
         body: formData,
       });
@@ -152,7 +153,7 @@ SKU0006,High Volume Item,4,4,3,1.0,800,3600,9.9,3.0`;
         inventory_list_id: params.inventory_list_id,
       });
 
-      const response = await fetch("http://localhost:8000/optimize-dividers", {
+      const response = await fetch(API_ENDPOINTS.optimizeDividers(), {
         method: "POST",
         body: formData,
       });

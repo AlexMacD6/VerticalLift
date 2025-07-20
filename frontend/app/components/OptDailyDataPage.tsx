@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { API_ENDPOINTS } from "../lib/api";
 
 const mockData = [
   { date: "2024-06-01", sku: "SKU0001", units_sold: 5 },
@@ -54,7 +55,7 @@ export default function OptDailyDataPage() {
       const formData = new FormData();
       formData.append("file", file);
       // You may want to adjust the endpoint as needed
-      const response = await fetch("http://localhost:8000/import-daily-sales", {
+      const response = await fetch(API_ENDPOINTS.importDailySales(), {
         method: "POST",
         body: formData,
       });

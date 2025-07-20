@@ -20,6 +20,7 @@ import {
 import UploadedDataDisplay from "./components/UploadedDataDisplay";
 import InventoryAnalytics from "./components/InventoryAnalytics";
 import DividerOptimization from "./components/DividerOptimization";
+import { API_ENDPOINTS } from "./lib/api";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"results" | "data" | "analytics">(
@@ -76,14 +77,14 @@ export default function Home() {
     useState(true);
 
   const fetchTrayConfigs = () => {
-    fetch("http://localhost:8000/tray-configs")
+    fetch(API_ENDPOINTS.trayConfigs())
       .then((res) => res.json())
       .then((data) => setTrayConfigs(data))
       .catch((err) => console.error("Failed to fetch tray configs", err));
   };
 
   const fetchInventoryLists = () => {
-    fetch("http://localhost:8000/inventory-lists")
+    fetch(API_ENDPOINTS.inventoryLists())
       .then((res) => res.json())
       .then((data) => setInventoryLists(data))
       .catch((err) => console.error("Failed to fetch inventory lists", err));
@@ -220,13 +221,10 @@ export default function Home() {
         }
 
         console.log("Sending divider optimization request to backend...");
-        const response = await fetch(
-          "http://localhost:8000/optimize-dividers",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
+        const response = await fetch(API_ENDPOINTS.optimizeDividers(), {
+          method: "POST",
+          body: formData,
+        });
 
         console.log("Divider optimization response status:", response.status);
 
@@ -262,7 +260,7 @@ export default function Home() {
       }
 
       console.log("Sending tray optimization request to backend...");
-      const response = await fetch("http://localhost:8000/optimize", {
+      const response = await fetch(API_ENDPOINTS.optimize(), {
         method: "POST",
         body: formData,
       });
