@@ -1,0 +1,28 @@
+{
+  "name": "tray-optimizer-mvp",
+  "version": "1.0.0",
+  "description": "Tray Optimizer MVP - Full Stack Application",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && py -m uvicorn app:app --reload",
+    "dev:frontend": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "tray-optimizer",
+    "warehouse",
+    "optimization",
+    "fastapi",
+    "nextjs"
+  ],
+  "author": "Tray Optimizer MVP Team",
+  "license": "MIT",
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

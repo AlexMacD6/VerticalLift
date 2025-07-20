@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model tray_configs {
+  id              Int     @id @default(autoincrement())
+  name            String? @unique(map: "ix_tray_configs_name") @db.VarChar
+  tray_length_in  Float?
+  tray_width_in   Float?
+  tray_depth_in   Float?
+  num_trays       Int?
+  weight_limit_lb Float?
+
+  @@index([id], map: "ix_tray_configs_id")
+  @@map("tray_configs")
+}
+
+model inventory_lists {
+  id           String         @id @unique(map: "ix_inventory_lists_id") @default(uuid()) @db.VarChar
+  name         String         @db.VarChar
+  created_at   DateTime?      @db.Timestamp(6)
+  daily_sales  daily_sales[]
+  inventories  inventory[]
+  tray_layouts tray_layouts[]
+
+  @@map("inventory_lists")
+}
+
+model inventory {
+  id                Int             @id @default(autoincrement())
+  sku_id            String?         @db.VarChar
+  description       String?         @db.VarChar
+  length_in         Float?
+  width_in          Float?
+  height_in         Float?
+  weight_lb         Float?
+  on_hand_units     Int?
+  on_shelf_units    Int? // Added to match SQLAlchemy model
+  annual_units_sold Int?
+  daily_picks       Float?
+  demand_std_dev    Float?
+  inventory_list_id String          @db.VarChar
+  inventory_list    inventory_lists @relation(fields: [inventory_list_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([sku_id, inventory_list_id], map: "uq_inventory_sku_list")
+  @@index([id], map: "ix_inventory_id")
+  @@index([sku_id], map: "ix_inventory_sku_id")
+  @@map("inventory")
+}
+
+model daily_sales {
+  id                Int             @id @default(autoincrement())
+  date              DateTime        @db.Timestamp(6)
+  sku_id            String          @db.VarChar
+  units_sold        Int
+  inventory_list_id String          @db.VarChar
+  inventory_list    inventory_lists @relation(fields: [inventory_list_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id], map: "ix_daily_sales_id")
+  @@index([sku_id], map: "ix_daily_sales_sku_id")
+  @@map("daily_sales")
+}
+
+model tray_layouts {
+  id                 Int             @id @default(autoincrement())
+  tray_id            Int
+  inventory_list_id  String          @db.VarChar
+  optimization_model String          @db.VarChar
+  tray_width_in      Float
+  tray_length_in     Float
+  tray_depth_in      Float
+  buffer_pct         Float
+  created_at         DateTime        @default(now()) @db.Timestamp(6)
+  inventory_list     inventory_lists @relation(fields: [inventory_list_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  slots              tray_slots[]
+
+  @@index([id], map: "ix_tray_layouts_id")
+  @@index([tray_id], map: "ix_tray_layouts_tray_id")
+  @@index([inventory_list_id], map: "ix_tray_layouts_inventory_list_id")
+  @@map("tray_layouts")
+}
+
+model tray_slots {
+  id             Int          @id @default(autoincrement())
+  tray_layout_id Int          @db.Integer
+  sku_id         String       @db.VarChar
+  x_in           Float // X position in inches
+  y_in           Float // Y position in inches
+  width_in       Float // Slot width in inches
+  length_in      Float // Slot length in inches
+  tray_layout    tray_layouts @relation(fields: [tray_layout_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id], map: "ix_tray_slots_id")
+  @@index([sku_id], map: "ix_tray_slots_sku_id")
+  @@index([tray_layout_id], map: "ix_tray_slots_tray_layout_id")
+  @@map("tray_slots")
+}
