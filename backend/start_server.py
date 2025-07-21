@@ -1,10 +1,12 @@
-import uvicorn
+#!/usr/bin/env python3
 import os
 import sys
+import uvicorn
 
-if __name__ == "__main__":
-    # Get port from environment variable, with fallback
+def main():
+    # Get port from environment variable
     port_str = os.environ.get("PORT", "8000")
+    
     try:
         port = int(port_str)
     except ValueError:
@@ -18,4 +20,7 @@ if __name__ == "__main__":
         uvicorn.run("app:app", host="0.0.0.0", port=port, reload=False)
     except Exception as e:
         print(f"Error starting server: {e}")
-        sys.exit(1) 
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main() 
