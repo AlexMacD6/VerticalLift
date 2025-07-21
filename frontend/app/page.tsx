@@ -1184,7 +1184,7 @@ function ConfigurationPanel({
                           setUpdateSuccess(false);
                           try {
                             const response = await fetch(
-                              "http://localhost:8000/tray-configs",
+                              API_ENDPOINTS.trayConfigs(),
                               {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
@@ -1227,7 +1227,7 @@ function ConfigurationPanel({
                           setUpdateSuccess(false);
                           try {
                             const response = await fetch(
-                              `http://localhost:8000/tray-configs/${selectedConfigId}`,
+                              `${API_ENDPOINTS.trayConfigs()}/${selectedConfigId}`,
                               {
                                 method: "PUT",
                                 headers: { "Content-Type": "application/json" },
@@ -1289,7 +1289,7 @@ function ConfigurationPanel({
                           setUpdateSuccess(false);
                           try {
                             const response = await fetch(
-                              "http://localhost:8000/tray-configs",
+                              API_ENDPOINTS.trayConfigs(),
                               {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
