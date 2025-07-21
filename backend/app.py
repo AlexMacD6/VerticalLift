@@ -13,12 +13,27 @@ load_dotenv()  # Loads .env file from project root
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base.metadata.create_all(bind=engine)
+# Initialize database connection lazily
+engine = None
+SessionLocal = None
+
+def get_engine():
+    global engine
+    if engine is None:
+        if not DATABASE_URL:
+            raise ValueError("DATABASE_URL environment variable is not set")
+        engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+        Base.metadata.create_all(bind=engine)
+    return engine
+
+def get_session_local():
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+    return SessionLocal
 
 def get_db():
-    db = SessionLocal()
+    db = get_session_local()()
     try:
         yield db
     finally:
@@ -34,6 +49,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def read_root():
+    return {"message": "Tray Optimizer MVP API is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "database_url_set": bool(DATABASE_URL)}
 
 def convert_numpy(obj):
     if isinstance(obj, dict):
