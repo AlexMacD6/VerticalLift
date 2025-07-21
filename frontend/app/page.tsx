@@ -75,6 +75,9 @@ export default function Home() {
   const [show3DPreview, setShow3DPreview] = useState(true);
   const [dimensionsPanelCollapsed, setDimensionsPanelCollapsed] =
     useState(true);
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [analyticsComputed, setAnalyticsComputed] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
 
   const fetchTrayConfigs = () => {
     fetch(API_ENDPOINTS.trayConfigs())
@@ -165,51 +168,142 @@ export default function Home() {
     fetchInventoryLists();
   };
 
+  const computeAnalytics = async () => {
+    if (!selectedInventoryList) return;
+
+    try {
+      console.log("Computing inventory analytics...");
+
+      // Fetch inventory and daily sales data
+      const inventoryResponse = await fetch(
+        API_ENDPOINTS.inventory(selectedInventoryList)
+      );
+      const dailySalesResponse = await fetch(
+        API_ENDPOINTS.dailySales(selectedInventoryList)
+      );
+
+      if (!inventoryResponse.ok || !dailySalesResponse.ok) {
+        throw new Error("Failed to fetch data for analytics");
+      }
+
+      const inventory = await inventoryResponse.json();
+      const dailySales = await dailySalesResponse.json();
+
+      // Compute rolling averages and analytics
+      const analytics = computeRollingAverages(inventory, dailySales);
+
+      // Save on-shelf units to database
+      const onShelfData = analytics.map((item) => ({
+        sku_id: item.sku_id,
+        on_shelf_units: item.on_shelf_units,
+      }));
+
+      const updateResponse = await fetch(
+        API_ENDPOINTS.updateOnShelfUnits(selectedInventoryList),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ on_shelf_data: onShelfData }),
+        }
+      );
+
+      if (updateResponse.ok) {
+        setAnalyticsData(analytics);
+        setAnalyticsComputed(true);
+        console.log("Analytics computed and saved successfully");
+      } else {
+        console.error("Failed to save on-shelf units");
+      }
+    } catch (error) {
+      console.error("Error computing analytics:", error);
+    }
+  };
+
+  const computeRollingAverages = (inventory: any[], dailySales: any[]) => {
+    const analytics: any[] = [];
+
+    for (const item of inventory) {
+      const skuSales = dailySales.filter((sale) => sale.sku_id === item.sku_id);
+
+      if (skuSales.length === 0) {
+        analytics.push({
+          ...item,
+          rolling_avg_std_dev: 0,
+          total_sales: 0,
+          avg_daily_sales: 0,
+          volatility_score: 0,
+          on_shelf_units: item.on_hand_units || 0,
+          safety_stock: 0,
+          cycle_stock: 0,
+        });
+        continue;
+      }
+
+      // Calculate rolling averages
+      const salesValues = skuSales.map((s) => s.units_sold);
+      const rollingStdDev = calculateRollingStdDev(salesValues, 30);
+      const totalSales = salesValues.reduce((sum, val) => sum + val, 0);
+      const avgDailySales = totalSales / salesValues.length;
+
+      // Calculate on-shelf units (simplified version)
+      const serviceLevelZ = 1.645; // 95% service level
+      const cycleStock = avgDailySales * 7; // 7 days of coverage
+      const safetyStock = serviceLevelZ * rollingStdDev * Math.sqrt(7);
+      const onShelfUnits = Math.ceil(cycleStock + safetyStock);
+
+      analytics.push({
+        ...item,
+        rolling_avg_std_dev: rollingStdDev,
+        total_sales: totalSales,
+        avg_daily_sales: avgDailySales,
+        volatility_score: rollingStdDev / avgDailySales,
+        on_shelf_units: onShelfUnits,
+        safety_stock: Math.ceil(safetyStock),
+        cycle_stock: Math.ceil(cycleStock),
+      });
+    }
+
+    return analytics;
+  };
+
+  const calculateRollingStdDev = (values: number[], window: number): number => {
+    if (values.length < window) return 0;
+
+    const recentValues = values.slice(-window);
+    const mean =
+      recentValues.reduce((sum, val) => sum + val, 0) / recentValues.length;
+    const variance =
+      recentValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+      recentValues.length;
+
+    return Math.sqrt(variance);
+  };
+
   const handleOptimize = async () => {
     console.log("Starting optimization with database inventory");
     console.log("Parameters:", configParams);
 
-    // First, run inventory analytics to calculate on-shelf units
-    if (selectedInventoryList && activeTab === "results") {
-      try {
+    setOptimizing(true);
+
+    try {
+      // First, run inventory analytics to calculate on-shelf units
+      if (selectedInventoryList && activeTab === "results") {
+        await computeAnalytics();
+      }
+
+      // Check if we should run divider optimization (Results tab)
+      const isDividerOptimization =
+        activeTab === "results" &&
+        selectedDividerModel &&
+        selectedDividerModel !== "greedy";
+
+      if (isDividerOptimization) {
+        // Run divider optimization
         console.log(
-          "Running inventory analytics to calculate on-shelf units..."
+          "Running divider optimization with model:",
+          selectedDividerModel
         );
 
-        // Call the analytics function that was exposed to window
-        if (
-          typeof window !== "undefined" &&
-          (window as any).runInventoryAnalytics
-        ) {
-          console.log("Found runInventoryAnalytics function, calling it...");
-          await (window as any).runInventoryAnalytics();
-          console.log("Inventory analytics completed successfully");
-        } else {
-          console.log(
-            "Inventory analytics function not available, proceeding without it"
-          );
-          console.log("Available window functions:", Object.keys(window));
-        }
-      } catch (error) {
-        console.error("Error running inventory analytics:", error);
-        // Continue with optimization even if analytics fails
-      }
-    }
-
-    // Check if we should run divider optimization (Results tab)
-    const isDividerOptimization =
-      activeTab === "results" &&
-      selectedDividerModel &&
-      selectedDividerModel !== "greedy";
-
-    if (isDividerOptimization) {
-      // Run divider optimization
-      console.log(
-        "Running divider optimization with model:",
-        selectedDividerModel
-      );
-
-      try {
         const formData = new FormData();
         formData.append("tray_length_in", configParams.tray_length_in || "156");
         formData.append("tray_width_in", configParams.tray_width_in || "36");
@@ -240,15 +334,10 @@ export default function Home() {
             `Failed to run divider optimization: ${errorData.error || "Unknown error"}`
           );
         }
-      } catch (error) {
-        console.error("Divider optimization network error:", error);
-        alert(`Divider optimization network error: ${error}`);
+        return;
       }
-      return;
-    }
 
-    // Regular tray optimization - use rectpack instead of greedy
-    try {
+      // Regular tray optimization - use rectpack instead of greedy
       const formData = new FormData();
       formData.append("tray_length_in", configParams.tray_length_in || "156");
       formData.append("tray_width_in", configParams.tray_width_in || "36");
@@ -280,8 +369,10 @@ export default function Home() {
         );
       }
     } catch (error) {
-      console.error("Tray optimization network error:", error);
-      alert(`Tray optimization network error: ${error}`);
+      console.error("Optimization error:", error);
+      alert(`Optimization error: ${error}`);
+    } finally {
+      setOptimizing(false);
     }
   };
 
@@ -437,7 +528,7 @@ export default function Home() {
                 dimensionsPanelCollapsed={dimensionsPanelCollapsed}
                 setDimensionsPanelCollapsed={setDimensionsPanelCollapsed}
               />
-              <OptimizeButton onClick={handleOptimize} />
+              <OptimizeButton onClick={handleOptimize} loading={optimizing} />
             </div>
           </div>
         </div>
@@ -599,7 +690,12 @@ export default function Home() {
 
           {activeTab === "analytics" && (
             <div className="mb-10">
-              <InventoryAnalytics inventoryListId={selectedInventoryList} />
+              <InventoryAnalytics
+                inventoryListId={selectedInventoryList}
+                analyticsData={analyticsData}
+                analyticsComputed={analyticsComputed}
+                onComputeAnalytics={computeAnalytics}
+              />
             </div>
           )}
 
@@ -806,18 +902,29 @@ type ConfigurationPanelProps = {
 function OptimizeButton({
   onClick,
   disabled = false,
+  loading = false,
 }: {
   onClick: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   return (
     <div className="flex justify-center my-8">
       <button
         onClick={onClick}
-        disabled={disabled}
-        className="px-10 py-4 text-2xl font-bold bg-gradient-to-r from-[#D4AF3D] to-[#825E08] text-white rounded-lg shadow-lg hover:from-[#b8932f] hover:to-[#6a4806] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={disabled || loading}
+        className={`px-10 py-4 text-2xl font-bold bg-gradient-to-r from-[#D4AF3D] to-[#825E08] text-white rounded-lg shadow-lg hover:from-[#b8932f] hover:to-[#6a4806] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+          loading ? "animate-pulse shadow-2xl" : ""
+        }`}
       >
-        Optimize
+        {loading ? (
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            <span>Optimizing...</span>
+          </div>
+        ) : (
+          "Optimize"
+        )}
       </button>
     </div>
   );

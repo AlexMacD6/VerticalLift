@@ -2,7 +2,10 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const apiUrl = (endpoint: string) => {
-  return `${API_BASE_URL}${endpoint}`;
+  // Remove trailing slash from base URL and leading slash from endpoint
+  const baseUrl = API_BASE_URL.replace(/\/$/, '');
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  return `${baseUrl}/${cleanEndpoint}`;
 };
 
 // Common API endpoints

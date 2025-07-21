@@ -37,6 +37,9 @@ ChartJS.register(
 
 interface InventoryAnalyticsProps {
   inventoryListId?: string;
+  analyticsData?: any[];
+  analyticsComputed?: boolean;
+  onComputeAnalytics?: () => Promise<void>;
 }
 
 interface SKUAnalytics {
@@ -649,10 +652,20 @@ const ColumnTooltip = ({
 
 export default function InventoryAnalytics({
   inventoryListId,
+  analyticsData = [],
+  analyticsComputed = false,
+  onComputeAnalytics,
 }: InventoryAnalyticsProps) {
   const [analytics, setAnalytics] = useState<SKUAnalytics[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use passed analytics data if available
+  useEffect(() => {
+    if (analyticsComputed && analyticsData.length > 0) {
+      setAnalytics(analyticsData);
+    }
+  }, [analyticsComputed, analyticsData]);
   const [sortBy, setSortBy] = useState<
     | "sku"
     | "total_sales"
@@ -1206,7 +1219,7 @@ export default function InventoryAnalytics({
   }
 
   // Show message when analytics haven't been computed yet
-  if (analytics.length === 0 && !loading) {
+  if (!analyticsComputed && analytics.length === 0 && !loading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
         <div className="text-center">
@@ -1218,12 +1231,14 @@ export default function InventoryAnalytics({
             Click the "Optimize" button to compute inventory analytics and
             calculate on-shelf units.
           </p>
-          <button
-            onClick={runAnalytics}
-            className="px-4 py-2 bg-[#D4AF3D] text-white rounded-md hover:bg-[#b8932f] transition-colors text-sm font-medium"
-          >
-            Compute Analytics
-          </button>
+          {onComputeAnalytics && (
+            <button
+              onClick={onComputeAnalytics}
+              className="px-4 py-2 bg-[#D4AF3D] text-white rounded-md hover:bg-[#b8932f] transition-colors text-sm font-medium"
+            >
+              Compute Analytics
+            </button>
+          )}
         </div>
       </div>
     );
